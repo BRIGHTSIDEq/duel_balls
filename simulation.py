@@ -9,28 +9,40 @@ class GameState:
         self.balls = [self.ball1, self.ball2]
         self.winner = None
         self.parry_effect_timer = 0
+        self.hit_events = []  # Для записи звуков ударов
+        self.frame_count = 0
 
     def update(self):
+        self.frame_count += 1
+        
         if self.winner:
             return
 
+        # Обновляем физику шаров
         for ball in self.balls:
             ball.update()
 
-        # Проверка столкновений
-        # 1. Парирование (оружие против оружия)
-        if self.ball1.weapon_rect.colliderect(self.ball2.weapon_rect):
-            self.ball1.parry()
-            self.ball2.parry()
-            self.parry_effect_timer = 5 # Показываем эффект 5 кадров
-            return # В этот кадр ударов не происходит
+        # Проверка столкновений только если нет эффекта парирования
+        if self.parry_effect_timer <= 0:
+            weapon1_rect = self.ball1.get_weapon_rect()
+            weapon2_rect = self.ball2.get_weapon_rect()
+            
+            # 1. Парирование (оружие против оружия) - приоритет!
+            if weapon1_rect.colliderect(weapon2_rect):
+                self.ball1.parry()
+                self.ball2.parry()
+                self.parry_effect_timer = 20 # Эффект парирования
+                self.hit_events.append(self.frame_count)
+                return # Прерываем проверку ударов
 
-        # 2. Удар (оружие против шара)
-        if self.ball1.weapon_rect.colliderect(self.ball2.rect):
-            self.ball1.attack(self.ball2)
-        
-        if self.ball2.weapon_rect.colliderect(self.ball1.rect):
-            self.ball2.attack(self.ball1)
+            # 2. Удары (оружие против шара) - только если можем атаковать
+            if weapon1_rect.colliderect(self.ball2.rect):
+                if self.ball1.attack(self.ball2):
+                    self.hit_events.append(self.frame_count)
+            
+            if weapon2_rect.colliderect(self.ball1.rect):
+                if self.ball2.attack(self.ball1):
+                    self.hit_events.append(self.frame_count)
 
         # Уменьшаем таймер эффекта парирования
         if self.parry_effect_timer > 0:
