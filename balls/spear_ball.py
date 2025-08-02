@@ -3,17 +3,25 @@ from .base_fighter import FightingBall
 
 class SpearBall(FightingBall):
     def __init__(self, x, y):
-        super().__init__(x=x, y=y, radius=40, color=(0, 200, 200), 
-                         name="Spear", weapon_type="spear")
-        self.stats = {'damage': 6, 'range': 120, 'speed': 7, 'radius': self.radius}
+        super().__init__(x=x, y=y, radius=40, color=(50, 200, 200), 
+                         name="Spear Hunter", weapon_type="spear")
         
-        # Параметры копья
-        self.weapon_length = 70  # Копье изначально длиннее
-        self.weapon_width = 6
-        self.weapon_color = (139, 69, 19)  # Коричневое древко
+        self.stats = {'damage': 12, 'range': 120, 'speed': 7, 'radius': self.radius}
+        
+        # Параметры копья - изначально длиннее меча
+        self.weapon_length = 70
+        self.weapon_width = 8
+        
+        # Улучшенная физика для копейщика
+        self.max_speed = 30  # Быстрее двигается
+        self.weapon_rotation_speed = 6  # Быстрее вращение
 
     def on_successful_attack(self, target):
-        # С каждым ударом урон и длина копья растут
-        self.stats['damage'] += 0.8
-        self.stats['range'] += 3
-        self.weapon_length += 5  # Копье растет быстрее чем меч
+        # Копье растет быстрее по длине и урону
+        self.stats['damage'] += 2.0
+        self.stats['range'] += 4
+        self.weapon_length += 6  # Копье растет быстрее меча
+        self.weapon_width = min(12, self.weapon_width + 0.3)
+        
+        # Копейщик получает скорость после удара
+        self.max_speed = min(35, self.max_speed + 0.5)

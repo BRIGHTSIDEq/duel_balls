@@ -1,5 +1,5 @@
-# renderer.py
 import pygame
+import math
 from config import *
 
 class Renderer:
@@ -7,16 +7,29 @@ class Renderer:
         pygame.init()
         self.screen = pygame.Surface((width, height))
         try:
-            self.font_large = pygame.font.Font(FONT_PATH, 80)
-            self.font_medium = pygame.font.Font(FONT_PATH, 60)
-            self.font_small = pygame.font.Font(FONT_PATH, 30)
+            self.font_large = pygame.font.Font(FONT_PATH, 90)
+            self.font_medium = pygame.font.Font(FONT_PATH, 50)
+            self.font_small = pygame.font.Font(FONT_PATH, 32)
+            self.font_tiny = pygame.font.Font(FONT_PATH, 24)
         except:
             # Если шрифт не найден, используем системный
-            self.font_large = pygame.font.Font(None, 80)
-            self.font_medium = pygame.font.Font(None, 60)
-            self.font_small = pygame.font.Font(None, 30)
+            self.font_large = pygame.font.Font(None, 90)
+            self.font_medium = pygame.font.Font(None, 50)
+            self.font_small = pygame.font.Font(None, 32)
+            self.font_tiny = pygame.font.Font(None, 24)
 
-    def draw_text(self, text, font, color, x, y, center=True):
+    def draw_text_with_shadow(self, text, font, color, x, y, center=True, shadow_offset=2):
+        """Рисует текст с тенью для лучшей читаемости"""
+        # Тень
+        shadow_surface = font.render(text, True, (0, 0, 0))
+        shadow_rect = shadow_surface.get_rect()
+        if center:
+            shadow_rect.center = (x + shadow_offset, y + shadow_offset)
+        else:
+            shadow_rect.topleft = (x + shadow_offset, y + shadow_offset)
+        self.screen.blit(shadow_surface, shadow_rect)
+        
+        # Основной текст
         text_surface = font.render(text, True, color)
         text_rect = text_surface.get_rect()
         if center:
@@ -24,122 +37,229 @@ class Renderer:
         else:
             text_rect.topleft = (x, y)
         self.screen.blit(text_surface, text_rect)
-        
-    def draw_stats_bar(self, label, value, max_value, x, y, width, height, color):
-        # Рисуем фон полоски
+
+    def draw_gradient_background(self):
+        """Рисует градиентный фон для лучшего вида"""
+        for y in range(HEIGHT):
+            color_ratio = y / HEIGHT
+            r = int(243 * (1 - color_ratio) + 200 * color_ratio)
+            g = int(229 * (1 - color_ratio) + 220 * color_ratio)
+            b = int(171 * (1 - color_ratio) + 180 * color_ratio)
+            pygame.draw.line(self.screen, (r, g, b), (0, y), (WIDTH, y))
+
+    def draw_enhanced_parry_effect(self, game_state):
+        """Улучшенный эффект парирования"""
+        if game_state.parry_effect_timer <= 0:
+            return
+            
+        intensity = game_state.parry_effect_timer / 30
+        center_x, center_y = WIDTH // 2, ARENA_Y + ARENA_HEIGHT // 2
+
+        # Множественные волны с разными цветами
+        for i in range(4):
+            radius = int(150 * (1 - intensity) + i * 60)
+            alpha = int(120 * intensity * (1 - i * 0.2))
+            colors = [(255, 255, 100), (255, 150, 100), (150, 255, 150), (100, 200, 255)]
+            
+            if alpha > 0:
+                wave_surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+                color = (*colors[i % len(colors)], alpha)
+                pygame.draw.circle(wave_surface, color, (radius, radius), radius, 8)
+                self.screen.blit(wave_surface, (center_x - radius, center_y - radius))
+
+        # Центральная вспышка
+        flash_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        alpha = int(100 * intensity)
+        flash_surface.fill((255, 255, 255, alpha))
+        self.screen.blit(flash_surface, (0, 0))
+
+    def draw_health_bar(self, ball, x, y, width, height, is_top=True):
+        """Рисует стильную полоску здоровья"""
+        # Фон
         bg_rect = pygame.Rect(x, y, width, height)
-        pygame.draw.rect(self.screen, (50, 50, 50), bg_rect)
+        pygame.draw.rect(self.screen, (60, 60, 60), bg_rect)
+        pygame.draw.rect(self.screen, (30, 30, 30), bg_rect, 3)
+
+        # Полоска здоровья с градиентом
+        health_ratio = ball.health / ball.max_health
+        fill_width = int(width * health_ratio)
         
-        # Рисуем саму полоску
-        fill_width = min(width, (value / max_value) * width)
+        if health_ratio > 0.6:
+            health_color = (0, 255, 100)
+        elif health_ratio > 0.3:
+            health_color = (255, 255, 0)
+        else:
+            health_color = (255, 50, 50)
+
         fill_rect = pygame.Rect(x, y, fill_width, height)
-        pygame.draw.rect(self.screen, color, fill_rect)
-
-        # Рисуем рамку
-        pygame.draw.rect(self.screen, WHITE, bg_rect, 2)
+        pygame.draw.rect(self.screen, health_color, fill_rect)
         
-        # Рисуем текст
-        stat_text = f"{label}: {value:.1f}"
-        self.draw_text(stat_text, self.font_small, WHITE, x + width / 2, y + height / 2)
+        # Эффект блеска на полоске здоровья
+        if fill_width > 10:
+            shine_rect = pygame.Rect(x + 2, y + 2, fill_width - 4, height // 3)
+            shine_color = tuple(min(255, c + 80) for c in health_color)
+            pygame.draw.rect(self.screen, shine_color, shine_rect)
 
-    def draw_physics_info(self, ball, x, y):
-        """Отображает физическую информацию о шарике"""
-        speed = (ball.vx**2 + ball.vy**2)**0.5
-        self.draw_text(f"Speed: {speed:.1f}", self.font_small, WHITE, x, y, False)
-        self.draw_text(f"Angle: {ball.angle:.0f}°", self.font_small, WHITE, x, y + 25, False)
+        # Имя и здоровье
+        name_text = f"{ball.name}: {int(ball.health)}"
+        text_color = WHITE if health_ratio > 0.3 else (255, 200, 200)
+        self.draw_text_with_shadow(name_text, self.font_small, text_color, 
+                                   x + width // 2, y + height // 2, True, 1)
+
+    def draw_arena_decorations(self):
+        """Рисует декоративные элементы арены"""
+        # Основная арена
+        arena_rect = pygame.Rect(ARENA_X, ARENA_Y, ARENA_WIDTH, ARENA_HEIGHT)
+        
+        # Градиентный фон арены
+        for i in range(ARENA_HEIGHT):
+            ratio = i / ARENA_HEIGHT
+            r = int(220 + (240 - 220) * ratio)
+            g = int(220 + (240 - 220) * ratio)
+            b = int(220 + (240 - 220) * ratio)
+            pygame.draw.line(self.screen, (r, g, b), 
+                           (ARENA_X, ARENA_Y + i), (ARENA_X + ARENA_WIDTH, ARENA_Y + i))
+        
+        # Красивая рамка арены
+        pygame.draw.rect(self.screen, (100, 100, 100), arena_rect, 8)
+        pygame.draw.rect(self.screen, (150, 150, 150), arena_rect, 4)
+        pygame.draw.rect(self.screen, BLACK, arena_rect, 2)
+        
+        # Угловые украшения
+        corner_size = 20
+        corners = [
+            (ARENA_X, ARENA_Y),
+            (ARENA_X + ARENA_WIDTH - corner_size, ARENA_Y),
+            (ARENA_X, ARENA_Y + ARENA_HEIGHT - corner_size),
+            (ARENA_X + ARENA_WIDTH - corner_size, ARENA_Y + ARENA_HEIGHT - corner_size)
+        ]
+        
+        for corner_x, corner_y in corners:
+            corner_rect = pygame.Rect(corner_x, corner_y, corner_size, corner_size)
+            pygame.draw.rect(self.screen, GOLD, corner_rect)
+            pygame.draw.rect(self.screen, BLACK, corner_rect, 2)
+
+    def draw_combat_effects(self, game_state):
+        """Рисует эффекты боя"""
+        # Эффекты от ударов
+        for ball in game_state.balls:
+            if ball.is_invulnerable and ball.invulnerable_timer > 15:
+                # Эффект защиты
+                shield_radius = ball.radius + 15
+                alpha = int(100 * (ball.invulnerable_timer / 25))
+                shield_surface = pygame.Surface((shield_radius * 2, shield_radius * 2), pygame.SRCALPHA)
+                pygame.draw.circle(shield_surface, (100, 100, 255, alpha), 
+                                 (shield_radius, shield_radius), shield_radius, 3)
+                self.screen.blit(shield_surface, 
+                               (ball.rect.centerx - shield_radius, ball.rect.centery - shield_radius))
+
+            # Эффект атаки
+            if ball.attack_cooldown > 10:
+                intensity = ball.attack_cooldown / 20
+                glow_radius = int(ball.radius + 10 * intensity)
+                glow_surface = pygame.Surface((glow_radius * 2, glow_radius * 2), pygame.SRCALPHA)
+                glow_color = (*ball.color, int(80 * intensity))
+                pygame.draw.circle(glow_surface, glow_color, 
+                                 (glow_radius, glow_radius), glow_radius)
+                self.screen.blit(glow_surface, 
+                               (ball.rect.centerx - glow_radius, ball.rect.centery - glow_radius))
+
+    def draw_stats_display(self, game_state):
+        """Отображает статистики внизу"""
+        ball1, ball2 = game_state.ball1, game_state.ball2
+        
+        # Урон
+        damage_text1 = f"DMG: {int(ball1.stats['damage'])}"
+        damage_text2 = f"DMG: {int(ball2.stats['damage'])}"
+        
+        self.draw_text_with_shadow(damage_text1, self.font_tiny, (255, 100, 100), 
+                                   80, STATS_Y, True, 1)
+        self.draw_text_with_shadow(damage_text2, self.font_tiny, (100, 255, 255), 
+                                   WIDTH - 80, STATS_Y, True, 1)
+        
+        # Длина оружия
+        length_text1 = f"LENGTH: {int(ball1.weapon_length)}"
+        length_text2 = f"LENGTH: {int(ball2.weapon_length)}"
+        
+        self.draw_text_with_shadow(length_text1, self.font_tiny, (200, 150, 200), 
+                                   80, STATS_Y + 30, True, 1)
+        self.draw_text_with_shadow(length_text2, self.font_tiny, (150, 200, 200), 
+                                   WIDTH - 80, STATS_Y + 30, True, 1)
 
     def draw(self, game_state):
-        # Фон
-        self.screen.fill(VANILLA)
+        # Градиентный фон
+        self.draw_gradient_background()
 
-        # Арена
-        arena_rect = pygame.Rect(ARENA_X, ARENA_Y, ARENA_WIDTH, ARENA_HEIGHT)
-        pygame.draw.rect(self.screen, GREY, arena_rect)
-        pygame.draw.rect(self.screen, BLACK, arena_rect, 5)
+        # Заголовок в безопасной зоне
+        title_text = "SWORD  ⚔️  SPEAR"
+        self.draw_text_with_shadow(title_text, self.font_medium, BLACK, 
+                                   WIDTH // 2, TITLE_Y, True, 2)
 
-        # Интерфейс как на скриншоте
-        title_text = f"Sword  VS  Spear"
-        self.draw_text(title_text, self.font_medium, BLACK, WIDTH / 2, ARENA_PADDING_Y / 2)
+        # Арена с декорациями
+        self.draw_arena_decorations()
+
+        # Эффекты боя
+        self.draw_combat_effects(game_state)
 
         # Рисуем шары
         for ball in game_state.balls:
             ball.draw(self.screen)
 
-        # Эффект парирования
-        if game_state.parry_effect_timer > 0:
-            intensity = game_state.parry_effect_timer / 20
-            
-            # Центральная вспышка
-            flash_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-            alpha = int(150 * intensity)
-            flash_surface.fill((255, 255, 200, alpha))
-            self.screen.blit(flash_surface, (0, 0))
-            
-            # Волны от центра
-            center_x, center_y = WIDTH // 2, HEIGHT // 2
-            for i in range(3):
-                radius = int(100 * (1 - intensity) + i * 50)
-                wave_alpha = int(100 * intensity)
-                wave_surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
-                pygame.draw.circle(wave_surface, (255, 255, 255, wave_alpha), (radius, radius), radius, 5)
-                self.screen.blit(wave_surface, (center_x - radius, center_y - radius))
+        # Улучшенный эффект парирования
+        self.draw_enhanced_parry_effect(game_state)
 
-        # Полоски здоровья
-        # Ball 1 (сверху)
-        hp1_rect = pygame.Rect(50, 50, WIDTH - 100, 25)
-        pygame.draw.rect(self.screen, (100, 0, 0), hp1_rect)
-        hp1_fill = (game_state.ball1.health / game_state.ball1.max_health) * hp1_rect.width
+        # Полоски здоровья в безопасных зонах
+        health_bar_width = WIDTH - 100
+        health_bar_height = 30
         
-        health_color = (0, 255, 0) if game_state.ball1.health > 50 else (255, 255, 0) if game_state.ball1.health > 25 else (255, 0, 0)
-        pygame.draw.rect(self.screen, health_color, (hp1_rect.x, hp1_rect.y, hp1_fill, hp1_rect.height))
-        pygame.draw.rect(self.screen, BLACK, hp1_rect, 3)
+        # Верхняя полоска здоровья
+        self.draw_health_bar(game_state.ball1, 50, HEALTH_BAR_TOP_Y, 
+                           health_bar_width, health_bar_height, True)
         
-        self.draw_text(f"{game_state.ball1.name}: {int(game_state.ball1.health)}", 
-                      self.font_small, WHITE, hp1_rect.centerx, hp1_rect.centery)
-        
-        # Ball 2 (снизу)
-        hp2_rect = pygame.Rect(50, HEIGHT - 75, WIDTH - 100, 25)
-        pygame.draw.rect(self.screen, (100, 0, 0), hp2_rect)
-        hp2_fill = (game_state.ball2.health / game_state.ball2.max_health) * hp2_rect.width
-        
-        health_color = (0, 255, 0) if game_state.ball2.health > 50 else (255, 255, 0) if game_state.ball2.health > 25 else (255, 0, 0)
-        pygame.draw.rect(self.screen, health_color, (hp2_rect.x, hp2_rect.y, hp2_fill, hp2_rect.height))
-        pygame.draw.rect(self.screen, BLACK, hp2_rect, 3)
-        
-        self.draw_text(f"{game_state.ball2.name}: {int(game_state.ball2.health)}", 
-                      self.font_small, WHITE, hp2_rect.centerx, hp2_rect.centery)
+        # Нижняя полоска здоровья
+        self.draw_health_bar(game_state.ball2, 50, HEALTH_BAR_BOTTOM_Y, 
+                           health_bar_width, health_bar_height, False)
 
-        # НЕ рисуем полоски характеристик пока - сосредотачиваемся на главном
-        # stat_y_start = HEIGHT - 180
-        # stats1 = game_state.ball1.stats
-        # self.draw_stats_bar("Damage", stats1['damage'], 50, 50, stat_y_start, 150, 25, RED)
-        
-        # Простой счетчик внизу как на скриншоте
-        self.draw_text(f"Poisons: 0", self.font_small, (128, 0, 128), 100, HEIGHT - 50)
-        self.draw_text(f"Range/Damage: 1", self.font_small, (0, 255, 255), WIDTH - 150, HEIGHT - 50)
+        # Статистики внизу
+        self.draw_stats_display(game_state)
 
-        # Показываем физическую информацию
-        # self.draw_physics_info(game_state.ball1, 10, 100)
-        # self.draw_physics_info(game_state.ball2, 10, 150)
+        # Индикаторы состояний с улучшенным дизайном
+        for ball in [game_state.ball1, game_state.ball2]:
+            if ball.is_invulnerable:
+                indicator_text = "INVULNERABLE!"
+                pulse = math.sin(game_state.frame_count * 0.3) * 0.5 + 0.5
+                color_intensity = int(255 * pulse)
+                self.draw_text_with_shadow(indicator_text, self.font_tiny, 
+                                         (255, color_intensity, 0), 
+                                         ball.rect.centerx, ball.rect.centery - 70, True, 1)
 
-        # Индикаторы состояний
-        if game_state.ball1.is_invulnerable:
-            self.draw_text("INVULNERABLE", self.font_small, (255, 255, 0), 
-                          game_state.ball1.rect.centerx, game_state.ball1.rect.centery - 60)
-        
-        if game_state.ball2.is_invulnerable:
-            self.draw_text("INVULNERABLE", self.font_small, (255, 255, 0), 
-                          game_state.ball2.rect.centerx, game_state.ball2.rect.centery - 60)
-
-        # Экран победы
+        # Экран победы с анимацией
         if game_state.winner:
+            # Полупрозрачный оверлей
             overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 180))
+            overlay.fill((0, 0, 0, 200))
             self.screen.blit(overlay, (0, 0))
             
-            winner_text = f"{game_state.winner.upper()} WINS!"
-            self.draw_text(winner_text, self.font_large, GOLD, WIDTH / 2, HEIGHT / 2)
+            # Анимированный текст победы
+            pulse = math.sin(game_state.frame_count * 0.2) * 0.3 + 0.7
+            winner_size = int(90 * pulse)
+            winner_font = pygame.font.Font(FONT_PATH if FONT_PATH else None, winner_size)
             
-            self.draw_text("PHYSICS VICTORY!", self.font_medium, WHITE, WIDTH / 2, HEIGHT / 2 + 100)
+            winner_text = f"{game_state.winner.upper()}"
+            self.draw_text_with_shadow(winner_text, winner_font, GOLD, 
+                                     WIDTH // 2, HEIGHT // 2 - 50, True, 3)
+            
+            victory_text = "WINS!"
+            self.draw_text_with_shadow(victory_text, self.font_large, WHITE, 
+                                     WIDTH // 2, HEIGHT // 2 + 50, True, 2)
+            
+            # Эффект конфетти
+            import random
+            for i in range(20):
+                x = random.randint(0, WIDTH)
+                y = random.randint(0, HEIGHT)
+                color = random.choice([(255, 215, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)])
+                size = random.randint(3, 8)
+                pygame.draw.circle(self.screen, color, (x, y), size)
 
         return self.screen
