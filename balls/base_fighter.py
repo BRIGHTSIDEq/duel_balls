@@ -17,25 +17,25 @@ class FightingBall:
         self.vx = random.uniform(-8, 8)
         self.vy = random.uniform(-6, 6)
         self.gravity = 0.35
-        self.bounce_energy = 1.15  # Больше энергии при отскоке
-        self.friction = 0.995  # Меньше трения = больше движения
-        self.min_speed = 3
-        self.max_speed = 25
+        self.bounce_energy = 1.1  # Уменьшили энергию отскока
+        self.friction = 0.998  # Больше трения для более спокойного движения
+        self.min_speed = 2
+        self.max_speed = 20  # Уменьшили максимальную скорость
 
         # БЫСТРОЕ вращение шарика
         self.angle = 0
         self.angular_velocity = 0
-        self.base_rotation_speed = 8  # Базовая скорость вращения
+        self.base_rotation_speed = 8
 
         # Оружие
         self.weapon_angle = 0
-        self.weapon_rotation_speed = 4  # Быстрее вращение оружия
+        self.weapon_rotation_speed = 4
         self.weapon_rotation_direction = 1
 
-        # Параметры оружия - РЕГУЛИРУЕМЫЕ
-        self.weapon_length = 50 if weapon_type == "sword" else 60
-        self.weapon_width = 8 if weapon_type == "sword" else 6
-        self.base_length = self.weapon_length  # Запоминаем базовую длину
+        # Параметры оружия - УВЕЛИЧЕННЫЕ в 2 раза для лучшей видимости
+        self.weapon_length = 100 if weapon_type == "sword" else 120
+        self.weapon_width = 16 if weapon_type == "sword" else 12
+        self.base_length = self.weapon_length
 
         self.max_health = 100
         self.health = self.max_health
@@ -96,20 +96,20 @@ class FightingBall:
         pass
 
     def parry(self):
-        # УЛУЧШЕННОЕ парирование - разлетаются в разные стороны
+        # УЛУЧШЕННОЕ парирование - более естественный отброс
         center_x = ARENA_X + ARENA_WIDTH / 2
         center_y = ARENA_Y + ARENA_HEIGHT / 2
         dx = self.rect.centerx - center_x
         dy = self.rect.centery - center_y
         distance = math.sqrt(dx*dx + dy*dy)
         if distance > 0:
-            bounce_force = 8  # Сильнее отброс при парировании
+            bounce_force = 6  # Уменьшили силу отброса
             self.vx += (dx / distance) * bounce_force
-            self.vy += (dy / distance) * bounce_force - 3
+            self.vy += (dy / distance) * bounce_force - 2
         
-        # Добавляем случайность для зрелищности
-        self.vx += random.uniform(-2, 2)
-        self.vy += random.uniform(-2, 2)
+        # Добавляем небольшую случайность
+        self.vx += random.uniform(-1, 1)
+        self.vy += random.uniform(-1, 1)
 
     def check_collision_with_other(self, other):
         """Проверка и разрешение столкновений между шариками"""
@@ -134,7 +134,7 @@ class FightingBall:
             other.rect.centery += ny * move_distance
 
             # Обмен скоростями с коэффициентом отскока
-            bounce_factor = 0.8
+            bounce_factor = 0.7
             self_vel_n = self.vx * nx + self.vy * ny
             other_vel_n = other.vx * nx + other.vy * ny
 
@@ -172,7 +172,7 @@ class FightingBall:
             self.vx *= factor
             self.vy *= factor
 
-        # БЫСТРОЕ вращение шарика на основе скорости
+        # Вращение шарика на основе скорости
         total_speed = math.sqrt(self.vx**2 + self.vy**2)
         self.angular_velocity = (total_speed * 2 + self.base_rotation_speed) 
         if self.vx < 0:
@@ -195,24 +195,32 @@ class FightingBall:
         if other_ball:
             self.check_collision_with_other(other_ball)
 
-        # Отскоки от стен с ДОПОЛНИТЕЛЬНОЙ энергией
+        # ИСПРАВЛЕННЫЕ отскоки от стен - предотвращаем вертикальное зацикливание
         if self.rect.left <= ARENA_X:
             self.rect.left = ARENA_X
             self.vx = -self.vx * self.bounce_energy
+            self.vx += 2  # Небольшой импульс чтобы не застревать
 
         if self.rect.right >= ARENA_X + ARENA_WIDTH:
             self.rect.right = ARENA_X + ARENA_WIDTH
             self.vx = -self.vx * self.bounce_energy
+            self.vx -= 2  # Небольшой импульс чтобы не застревать
 
         if self.rect.top <= ARENA_Y:
             self.rect.top = ARENA_Y
             self.vy = -self.vy * self.bounce_energy
+            # Предотвращаем вертикальное зацикливание
+            if abs(self.vx) < 3:
+                self.vx += random.uniform(-4, 4)
 
         if self.rect.bottom >= ARENA_Y + ARENA_HEIGHT:
             self.rect.bottom = ARENA_Y + ARENA_HEIGHT
-            self.vy = -self.vy * self.bounce_energy * 1.1  # Дополнительный отскок от пола
+            self.vy = -self.vy * self.bounce_energy
+            # Предотвращаем вертикальное зацикливание
+            if abs(self.vx) < 3:
+                self.vx += random.uniform(-4, 4)
 
-        # Поддержание минимальной скорости для постоянного движения
+        # Поддержание минимальной скорости
         total_speed = math.sqrt(self.vx**2 + self.vy**2)
         if total_speed < self.min_speed:
             factor = self.min_speed / max(total_speed, 0.1)
@@ -237,87 +245,97 @@ class FightingBall:
         return pygame.Rect(min_x, min_y, max_x - min_x, max_y - min_y)
 
     def draw_pixel_sword(self, screen, start_pos, end_pos):
-        """Рисует красивый пиксельный меч"""
-        # Основное лезвие - серебристое
-        blade_width = max(1, int(self.weapon_width * 0.8))
-        pygame.draw.line(screen, (220, 220, 220), start_pos, end_pos, blade_width)
+        """Рисует красивый пиксельный меч с отличной контрастностью"""
+        # Основное лезвие с темным контуром
+        blade_width = max(4, int(self.weapon_width * 0.8))
+        pygame.draw.line(screen, (40, 40, 40), start_pos, end_pos, blade_width + 4)  # Темный контур
+        pygame.draw.line(screen, (160, 160, 160), start_pos, end_pos, blade_width)   # Основное лезвие
         
-        # Блики на лезвии
-        if blade_width > 2:
-            highlight_width = max(1, blade_width // 3)
+        # Яркий блик на лезвии
+        if blade_width > 4:
+            highlight_width = max(2, blade_width // 3)
             pygame.draw.line(screen, (255, 255, 255), start_pos, end_pos, highlight_width)
         
-        # Рукоять (от центра шарика к началу лезвия)
-        handle_length = 12
+        # Рукоять
+        handle_length = 20
         handle_start_x = self.rect.centerx + (self.radius - handle_length) * math.sin(math.radians(self.weapon_angle))
         handle_start_y = self.rect.centery - (self.radius - handle_length) * math.cos(math.radians(self.weapon_angle))
         handle_end = start_pos
         
-        # Рукоять - коричневая
-        pygame.draw.line(screen, (101, 67, 33), (handle_start_x, handle_start_y), handle_end, max(1, blade_width + 2))
+        pygame.draw.line(screen, (20, 10, 0), (handle_start_x, handle_start_y), handle_end, blade_width + 6)  # Темный контур
+        pygame.draw.line(screen, (101, 67, 33), (handle_start_x, handle_start_y), handle_end, blade_width + 2)  # Рукоять
         
         # Гарда (перекрестие)
-        guard_length = 10
+        guard_length = 18
         guard_start_x = start_pos[0] - guard_length * math.cos(math.radians(self.weapon_angle))
         guard_start_y = start_pos[1] - guard_length * math.sin(math.radians(self.weapon_angle))
         guard_end_x = start_pos[0] + guard_length * math.cos(math.radians(self.weapon_angle))
         guard_end_y = start_pos[1] + guard_length * math.sin(math.radians(self.weapon_angle))
         
-        pygame.draw.line(screen, (150, 150, 150), (guard_start_x, guard_start_y), (guard_end_x, guard_end_y), max(1, blade_width))
+        pygame.draw.line(screen, (30, 30, 30), (guard_start_x, guard_start_y), (guard_end_x, guard_end_y), blade_width + 2)
+        pygame.draw.line(screen, (150, 150, 150), (guard_start_x, guard_start_y), (guard_end_x, guard_end_y), blade_width)
         
-        # Острие меча - заостренное
-        tip_length = 8
+        # Острие меча
+        tip_length = 15
         tip_x = end_pos[0] + tip_length * math.sin(math.radians(self.weapon_angle))
         tip_y = end_pos[1] - tip_length * math.cos(math.radians(self.weapon_angle))
         
-        # Треугольное острие
         tip_left_x = end_pos[0] + (blade_width//2) * math.cos(math.radians(self.weapon_angle))
         tip_left_y = end_pos[1] + (blade_width//2) * math.sin(math.radians(self.weapon_angle))
         tip_right_x = end_pos[0] - (blade_width//2) * math.cos(math.radians(self.weapon_angle))
         tip_right_y = end_pos[1] - (blade_width//2) * math.sin(math.radians(self.weapon_angle))
         
+        pygame.draw.polygon(screen, (40, 40, 40), [(tip_x, tip_y), (tip_left_x, tip_left_y), (tip_right_x, tip_right_y)])
         pygame.draw.polygon(screen, (240, 240, 240), [(tip_x, tip_y), (tip_left_x, tip_left_y), (tip_right_x, tip_right_y)])
 
     def draw_pixel_spear(self, screen, start_pos, end_pos):
-        """Рисует красивое пиксельное копье"""
-        # Древко - коричневое
-        shaft_width = max(1, int(self.weapon_width * 0.7))
-        pygame.draw.line(screen, (139, 69, 19), start_pos, end_pos, shaft_width)
+        """Рисует красивое пиксельное копье с отличной контрастностью"""
+        # Древко с темным контуром
+        shaft_width = max(4, int(self.weapon_width * 0.7))
+        pygame.draw.line(screen, (30, 15, 5), start_pos, end_pos, shaft_width + 4)  # Темный контур
+        pygame.draw.line(screen, (139, 69, 19), start_pos, end_pos, shaft_width)    # Основное древко
         
         # Полоски на древке для текстуры
-        if shaft_width > 2:
-            stripe_width = max(1, shaft_width // 3)
+        if shaft_width > 4:
+            stripe_width = max(2, shaft_width // 3)
             pygame.draw.line(screen, (101, 67, 33), start_pos, end_pos, stripe_width)
         
-        # Наконечник копья - металлический
-        tip_length = 15
+        # Наконечник копья
+        tip_length = 25
         tip_x = end_pos[0] + tip_length * math.sin(math.radians(self.weapon_angle))
         tip_y = end_pos[1] - tip_length * math.cos(math.radians(self.weapon_angle))
         
-        # Основной наконечник
-        pygame.draw.line(screen, (200, 200, 200), end_pos, (tip_x, tip_y), max(1, shaft_width + 2))
+        # Основной наконечник с контуром
+        pygame.draw.line(screen, (40, 40, 40), end_pos, (tip_x, tip_y), shaft_width + 6)  # Темный контур
+        pygame.draw.line(screen, (180, 180, 180), end_pos, (tip_x, tip_y), shaft_width + 2)  # Основной наконечник
         
         # Зазубрины наконечника
-        barb_length = 6
+        barb_length = 12
         barb_left_x = end_pos[0] + barb_length * math.sin(math.radians(self.weapon_angle + 135))
         barb_left_y = end_pos[1] - barb_length * math.cos(math.radians(self.weapon_angle + 135))
         barb_right_x = end_pos[0] + barb_length * math.sin(math.radians(self.weapon_angle - 135))
         barb_right_y = end_pos[1] - barb_length * math.cos(math.radians(self.weapon_angle - 135))
         
-        pygame.draw.line(screen, (180, 180, 180), end_pos, (barb_left_x, barb_left_y), max(1, shaft_width))
-        pygame.draw.line(screen, (180, 180, 180), end_pos, (barb_right_x, barb_right_y), max(1, shaft_width))
+        pygame.draw.line(screen, (40, 40, 40), end_pos, (barb_left_x, barb_left_y), shaft_width + 2)
+        pygame.draw.line(screen, (160, 160, 160), end_pos, (barb_left_x, barb_left_y), shaft_width)
+        pygame.draw.line(screen, (40, 40, 40), end_pos, (barb_right_x, barb_right_y), shaft_width + 2)
+        pygame.draw.line(screen, (160, 160, 160), end_pos, (barb_right_x, barb_right_y), shaft_width)
         
-        # Острие наконечника - очень острое
-        point_tip_x = tip_x + 5 * math.sin(math.radians(self.weapon_angle))
-        point_tip_y = tip_y - 5 * math.cos(math.radians(self.weapon_angle))
+        # Острие наконечника
+        point_tip_x = tip_x + 10 * math.sin(math.radians(self.weapon_angle))
+        point_tip_y = tip_y - 10 * math.cos(math.radians(self.weapon_angle))
         
+        pygame.draw.polygon(screen, (40, 40, 40), 
+                          [(point_tip_x, point_tip_y), 
+                           (tip_x + 4 * math.cos(math.radians(self.weapon_angle)), tip_y + 4 * math.sin(math.radians(self.weapon_angle))),
+                           (tip_x - 4 * math.cos(math.radians(self.weapon_angle)), tip_y - 4 * math.sin(math.radians(self.weapon_angle)))])
         pygame.draw.polygon(screen, (240, 240, 240), 
                           [(point_tip_x, point_tip_y), 
-                           (tip_x + 2 * math.cos(math.radians(self.weapon_angle)), tip_y + 2 * math.sin(math.radians(self.weapon_angle))),
-                           (tip_x - 2 * math.cos(math.radians(self.weapon_angle)), tip_y - 2 * math.sin(math.radians(self.weapon_angle)))])
+                           (tip_x + 3 * math.cos(math.radians(self.weapon_angle)), tip_y + 3 * math.sin(math.radians(self.weapon_angle))),
+                           (tip_x - 3 * math.cos(math.radians(self.weapon_angle)), tip_y - 3 * math.sin(math.radians(self.weapon_angle)))])
         
-        # Блик на наконечнике
-        pygame.draw.line(screen, (255, 255, 255), end_pos, (tip_x, tip_y), 1)
+        # Яркий блик на наконечнике
+        pygame.draw.line(screen, (255, 255, 255), end_pos, (tip_x, tip_y), 3)
 
     def draw_weapon(self, screen):
         start_pos, end_pos = self.get_weapon_line()
@@ -336,7 +354,7 @@ class FightingBall:
         # Рисуем оружие ПОД шариком
         self.draw_weapon(screen)
         
-        # Рисуем шарик с вращением (визуальный эффект)
+        # Рисуем шарик с вращением
         pygame.draw.circle(screen, ball_color, self.rect.center, self.radius)
         
         # Добавляем линию для показа вращения
@@ -352,7 +370,6 @@ class FightingBall:
             text_surface = font.render(health_text, True, (255, 255, 255))
             text_rect = text_surface.get_rect(center=self.rect.center)
             
-            # Тень для лучшей читаемости
             shadow_surface = font.render(health_text, True, (0, 0, 0))
             shadow_rect = text_surface.get_rect(center=(self.rect.center[0] + 2, self.rect.center[1] + 2))
             screen.blit(shadow_surface, shadow_rect)

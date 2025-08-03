@@ -1,5 +1,6 @@
 import pygame
 import math
+import random
 from config import *
 
 class Renderer:
@@ -47,49 +48,57 @@ class Renderer:
             b = int(171 * (1 - color_ratio) + 180 * color_ratio)
             pygame.draw.line(self.screen, (r, g, b), (0, y), (WIDTH, y))
 
-    def draw_enhanced_parry_effect(self, game_state):
-        """Улучшенный эффект парирования"""
+    def draw_spark_parry_effect(self, game_state):
+        """НОВЫЙ эффект парирования - искры как при столкновении металла"""
         if game_state.parry_effect_timer <= 0:
             return
             
-        intensity = game_state.parry_effect_timer / 30
-        center_x, center_y = WIDTH // 2, ARENA_Y + ARENA_HEIGHT // 2
-
-        # Множественные волны с разными цветами
-        for i in range(4):
-            radius = int(150 * (1 - intensity) + i * 60)
-            alpha = int(120 * intensity * (1 - i * 0.2))
-            colors = [(255, 255, 100), (255, 150, 100), (150, 255, 150), (100, 200, 255)]
+        # Центр между шариками для искр
+        center_x = (game_state.ball1.rect.centerx + game_state.ball2.rect.centerx) // 2
+        center_y = (game_state.ball1.rect.centery + game_state.ball2.rect.centery) // 2
+        
+        # Создаем искры вокруг точки столкновения
+        for i in range(15):  # 15 искр
+            # Случайное направление для каждой искры
+            angle = random.uniform(0, 360)
+            distance = random.uniform(10, 40)
             
-            if alpha > 0:
-                wave_surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
-                color = (*colors[i % len(colors)], alpha)
-                pygame.draw.circle(wave_surface, color, (radius, radius), radius, 8)
-                self.screen.blit(wave_surface, (center_x - radius, center_y - radius))
-
-        # Центральная вспышка
-        flash_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-        alpha = int(100 * intensity)
-        flash_surface.fill((255, 255, 255, alpha))
-        self.screen.blit(flash_surface, (0, 0))
+            spark_x = center_x + distance * math.cos(math.radians(angle))
+            spark_y = center_y + distance * math.sin(math.radians(angle))
+            
+            # Цвета искр - желтый, оранжевый, белый
+            colors = [(255, 255, 100), (255, 200, 50), (255, 255, 255), (255, 150, 0)]
+            spark_color = random.choice(colors)
+            
+            # Размер искры
+            spark_size = random.randint(2, 5)
+            
+            # Рисуем искру
+            pygame.draw.circle(self.screen, spark_color, (int(spark_x), int(spark_y)), spark_size)
+            
+            # Добавляем "хвостик" искры
+            tail_x = spark_x - 8 * math.cos(math.radians(angle))
+            tail_y = spark_y - 8 * math.sin(math.radians(angle))
+            pygame.draw.line(self.screen, spark_color, (spark_x, spark_y), (tail_x, tail_y), 2)
 
     def draw_health_bar(self, ball, x, y, width, height, is_top=True):
-        """Рисует стильную полоску здоровья"""
+        """Рисует стильную полоску здоровья с приятными цветами"""
         # Фон
         bg_rect = pygame.Rect(x, y, width, height)
         pygame.draw.rect(self.screen, (60, 60, 60), bg_rect)
         pygame.draw.rect(self.screen, (30, 30, 30), bg_rect, 3)
 
-        # Полоска здоровья с градиентом
+        # Полоска здоровья с более приятными цветами
         health_ratio = ball.health / ball.max_health
         fill_width = int(width * health_ratio)
         
+        # Новые приятные цвета для здоровья
         if health_ratio > 0.6:
-            health_color = (0, 255, 100)
+            health_color = (46, 204, 113)    # Мягкий зеленый
         elif health_ratio > 0.3:
-            health_color = (255, 255, 0)
+            health_color = (230, 126, 34)    # Теплый оранжевый
         else:
-            health_color = (255, 50, 50)
+            health_color = (231, 76, 60)     # Мягкий красный
 
         fill_rect = pygame.Rect(x, y, fill_width, height)
         pygame.draw.rect(self.screen, health_color, fill_rect)
@@ -97,7 +106,7 @@ class Renderer:
         # Эффект блеска на полоске здоровья
         if fill_width > 10:
             shine_rect = pygame.Rect(x + 2, y + 2, fill_width - 4, height // 3)
-            shine_color = tuple(min(255, c + 80) for c in health_color)
+            shine_color = tuple(min(255, c + 40) for c in health_color)
             pygame.draw.rect(self.screen, shine_color, shine_rect)
 
         # Имя и здоровье
@@ -114,9 +123,9 @@ class Renderer:
         # Градиентный фон арены
         for i in range(ARENA_HEIGHT):
             ratio = i / ARENA_HEIGHT
-            r = int(220 + (240 - 220) * ratio)
-            g = int(220 + (240 - 220) * ratio)
-            b = int(220 + (240 - 220) * ratio)
+            r = int(230 + (245 - 230) * ratio)
+            g = int(230 + (245 - 230) * ratio)
+            b = int(230 + (245 - 230) * ratio)
             pygame.draw.line(self.screen, (r, g, b), 
                            (ARENA_X, ARENA_Y + i), (ARENA_X + ARENA_WIDTH, ARENA_Y + i))
         
@@ -172,26 +181,26 @@ class Renderer:
         damage_text1 = f"DMG: {int(ball1.stats['damage'])}"
         damage_text2 = f"DMG: {int(ball2.stats['damage'])}"
         
-        self.draw_text_with_shadow(damage_text1, self.font_tiny, (255, 100, 100), 
-                                   80, STATS_Y, True, 1)
-        self.draw_text_with_shadow(damage_text2, self.font_tiny, (100, 255, 255), 
-                                   WIDTH - 80, STATS_Y, True, 1)
+        self.draw_text_with_shadow(damage_text1, self.font_tiny, (255, 100, 150), 
+                                   120, STATS_Y, True, 1)
+        self.draw_text_with_shadow(damage_text2, self.font_tiny, (100, 200, 255), 
+                                   WIDTH - 120, STATS_Y, True, 1)
         
         # Длина оружия
         length_text1 = f"LENGTH: {int(ball1.weapon_length)}"
         length_text2 = f"LENGTH: {int(ball2.weapon_length)}"
         
         self.draw_text_with_shadow(length_text1, self.font_tiny, (200, 150, 200), 
-                                   80, STATS_Y + 30, True, 1)
+                                   120, STATS_Y + 35, True, 1)
         self.draw_text_with_shadow(length_text2, self.font_tiny, (150, 200, 200), 
-                                   WIDTH - 80, STATS_Y + 30, True, 1)
+                                   WIDTH - 120, STATS_Y + 35, True, 1)
 
     def draw(self, game_state):
         # Градиентный фон
         self.draw_gradient_background()
 
-        # Заголовок в безопасной зоне
-        title_text = "SWORD  ⚔️  SPEAR"
+        # Заголовок
+        title_text = "SWORD  VS  SPEAR"
         self.draw_text_with_shadow(title_text, self.font_medium, BLACK, 
                                    WIDTH // 2, TITLE_Y, True, 2)
 
@@ -205,12 +214,12 @@ class Renderer:
         for ball in game_state.balls:
             ball.draw(self.screen)
 
-        # Улучшенный эффект парирования
-        self.draw_enhanced_parry_effect(game_state)
+        # НОВЫЙ эффект парирования - искры
+        self.draw_spark_parry_effect(game_state)
 
-        # Полоски здоровья в безопасных зонах
+        # Полоски здоровья
         health_bar_width = WIDTH - 100
-        health_bar_height = 30
+        health_bar_height = 35
         
         # Верхняя полоска здоровья
         self.draw_health_bar(game_state.ball1, 50, HEALTH_BAR_TOP_Y, 
@@ -223,10 +232,10 @@ class Renderer:
         # Статистики внизу
         self.draw_stats_display(game_state)
 
-        # Индикаторы состояний с улучшенным дизайном
+        # Индикаторы состояний
         for ball in [game_state.ball1, game_state.ball2]:
             if ball.is_invulnerable:
-                indicator_text = "INVULNERABLE!"
+                indicator_text = ""
                 pulse = math.sin(game_state.frame_count * 0.3) * 0.5 + 0.5
                 color_intensity = int(255 * pulse)
                 self.draw_text_with_shadow(indicator_text, self.font_tiny, 
@@ -243,7 +252,10 @@ class Renderer:
             # Анимированный текст победы
             pulse = math.sin(game_state.frame_count * 0.2) * 0.3 + 0.7
             winner_size = int(90 * pulse)
-            winner_font = pygame.font.Font(FONT_PATH if FONT_PATH else None, winner_size)
+            try:
+                winner_font = pygame.font.Font(FONT_PATH, winner_size)
+            except:
+                winner_font = pygame.font.Font(None, winner_size)
             
             winner_text = f"{game_state.winner.upper()}"
             self.draw_text_with_shadow(winner_text, winner_font, GOLD, 
@@ -254,11 +266,10 @@ class Renderer:
                                      WIDTH // 2, HEIGHT // 2 + 50, True, 2)
             
             # Эффект конфетти
-            import random
             for i in range(20):
                 x = random.randint(0, WIDTH)
                 y = random.randint(0, HEIGHT)
-                color = random.choice([(255, 215, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)])
+                color = random.choice([(255, 215, 0), (255, 100, 100), (100, 255, 100), (100, 100, 255)])
                 size = random.randint(3, 8)
                 pygame.draw.circle(self.screen, color, (x, y), size)
 

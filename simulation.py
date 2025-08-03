@@ -11,7 +11,7 @@ class GameState:
         self.balls = [self.ball1, self.ball2]
         self.winner = None
         self.parry_effect_timer = 0
-        self.hit_events = []  # Для записи звуков ударов
+        self.hit_events = []
         self.frame_count = 0
         
         # Система предотвращения застреваний
@@ -51,7 +51,7 @@ class GameState:
         dx = self.ball2.rect.centerx - self.ball1.rect.centerx
         dy = self.ball2.rect.centery - self.ball1.rect.centery
         distance = math.sqrt(dx*dx + dy*dy)
-        min_distance = self.ball1.radius + self.ball2.radius + 5  # +5 для зазора
+        min_distance = self.ball1.radius + self.ball2.radius + 5
         
         if distance < min_distance and distance > 0:
             # Нормализованный вектор разделения
@@ -78,7 +78,7 @@ class GameState:
     def enhanced_collision_detection(self):
         """Улучшенная система столкновений"""
         if self.parry_effect_timer > 0:
-            return  # Во время парирования не проверяем удары
+            return
             
         weapon1_rect = self.ball1.get_weapon_rect()
         weapon2_rect = self.ball2.get_weapon_rect()
@@ -102,35 +102,17 @@ class GameState:
             if self.ball2.attack(self.ball1):
                 self.hit_events.append(self.frame_count)
                 hit_occurred = True
-        
-        # Дополнительные эффекты при ударе
-        if hit_occurred:
-            self.add_hit_effects()
 
     def trigger_parry(self):
-        """Запускает эффект парирования"""
+        """Запускает УЛУЧШЕННЫЙ эффект парирования - всего 1 кадр микро-стан"""
         self.ball1.parry()
         self.ball2.parry()
-        self.parry_effect_timer = 30  # Увеличенный эффект
+        self.parry_effect_timer = 1  # Только 1 кадр!
         self.hit_events.append(self.frame_count)
-        
-        # Дополнительные эффекты при парировании
-        # Случайные искры от парирования
-        for _ in range(3):
-            spark_vx = random.uniform(-5, 5)
-            spark_vy = random.uniform(-5, 5)
-            # Можно добавить систему частиц позже
-
-    def add_hit_effects(self):
-        """Добавляет эффекты при ударе"""
-        # Легкая тряска экрана (можно реализовать в рендерере)
-        # Замедление времени на короткий момент
-        pass
 
     def keep_balls_in_arena(self):
         """Гарантирует, что шарики остаются в арене"""
         for ball in self.balls:
-            # Проверяем границы с небольшим запасом
             margin = 5
             
             if ball.rect.left < ARENA_X + margin:
@@ -154,7 +136,7 @@ class GameState:
         if self.frame_count % 180 == 0:  # Каждые 3 секунды
             for ball in self.balls:
                 total_speed = math.sqrt(ball.vx**2 + ball.vy**2)
-                if total_speed < 5:  # Если движется слишком медленно
+                if total_speed < 3:  # Если движется слишком медленно
                     ball.vx += random.uniform(-2, 2)
                     ball.vy += random.uniform(-2, 2)
 

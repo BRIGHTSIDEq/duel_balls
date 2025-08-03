@@ -30,24 +30,25 @@ def main():
     
     # Инициализируем звук
     pygame.mixer.init()
+
     
     # Сохраняем главный экран в переменную
     display_screen = pygame.display.set_mode((WIDTH, HEIGHT)) 
-    pygame.display.set_caption("Epic Ball Duel - Pixel Weapons Combat!")
+    pygame.display.set_caption("Epic Ball Duel - Giant Pixel Weapons Combat!")
 
     cleanup()
 
     renderer = Renderer(WIDTH, HEIGHT)
 
-    # Создаем улучшенных бойцов с пиксельными оружиями
+    # Создаем улучшенных бойцов с ОГРОМНЫМИ пиксельными оружиями
     # Позиционируем их в противоположных углах арены
-    ball1 = SwordBall(x=ARENA_X + 80, y=ARENA_Y + 80)
-    ball2 = SpearBall(x=ARENA_X + ARENA_WIDTH - 80, y=ARENA_Y + ARENA_HEIGHT - 80)
+    ball1 = SwordBall(x=ARENA_X + 100, y=ARENA_Y + 100)
+    ball2 = SpearBall(x=ARENA_X + ARENA_WIDTH - 100, y=ARENA_Y + ARENA_HEIGHT - 100)
 
     game_state = GameState(ball1, ball2)
 
     # Генерируем интро аудио
-    intro_text = f"Epic pixel weapon combat! {ball1.name} with evolving sword versus {ball2.name} with extending spear! Watch weapons grow with every hit!"
+    intro_text = f"Fight {ball1.name} versus {ball2.name} "
     generate_intro_audio(intro_text, INTRO_AUDIO_PATH)
 
     running = True
@@ -55,25 +56,24 @@ def main():
     clock = pygame.time.Clock()
     max_frames = FPS * 150  # 2.5 минуты максимум
 
-    print("🎮 Запускаем ПИКСЕЛЬНУЮ дуэль!")
-    print("⚔️ Новые фичи:")
-    print("  - Красивые пиксельные мечи и копья")
-    print("  - Оружие растет с каждым ударом")
-    print("  - Статистики подняты ближе к арене")
-    print("  - Квадратная арена для TikTok/YouTube")
-    print("  - Улучшенная физика и парирование")
+    print("🎮 Запускаем УЛУЧШЕННУЮ ПИКСЕЛЬНУЮ дуэль!")
+    print("⚔️ НОВЫЕ ИСПРАВЛЕНИЯ:")
+    print("  ✅ Оружие увеличено в 2 раза - теперь отлично видно!")
+    print("  ✅ Темные контуры на оружии для контрастности")
+    print("  ✅ Исправлено вертикальное зацикливание шариков")
+    print("  ✅ Арена перемещена в центр экрана")
+    print("  ✅ Приятные цвета здоровья (зеленый/оранжевый/красный)")
+    print("  ✅ Новый эффект парирования - искры как в реальной жизни!")
+    print("  ✅ Микро-стан всего 1 кадр вместо лагов")
+    print("  ✅ Улучшенная физика - меньше хаотичности")
 
     while running and frame_count < max_frames:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-        # Драматическое замедление при парировании
-        if game_state.parry_effect_timer > 20:
-            time.sleep(0.05)  # Более заметное замедление
-        elif game_state.parry_effect_timer > 10:
-            time.sleep(0.02)
-
+        # Больше НЕТ лагов от парирования - только 1 кадр эффект!
+        
         game_state.update()
 
         # Рендер
@@ -97,17 +97,19 @@ def main():
             print(f"⏱️ {minutes:02d}:{seconds:02d} | "
                   f"💚 {ball1.name}: {int(ball1.health)} (⚔️{int(ball1.weapon_length)}) | "
                   f"💙 {ball2.name}: {int(ball2.health)} (🔱{int(ball2.weapon_length)}) | "
-                  f"💥 Hits: {len(game_state.hit_events)}")
+                  f"💥 Hits: {len(game_state.hit_events)} | "
+                  f"✨ Parries: {sum(1 for i, frame in enumerate(game_state.hit_events) if i > 0 and frame - game_state.hit_events[i-1] < 5)}")
 
         if game_state.winner:
             winner_ball = ball1 if game_state.winner == ball1.name else ball2
             print(f"🏆 ПОБЕДИТЕЛЬ: {game_state.winner}!")
             print(f"💪 Финальный урон: {int(winner_ball.stats['damage'])}")
-            print(f"⚔️ Финальная длина оружия: {int(winner_ball.weapon_length)}")
+            print(f"⚔️ Финальная длина оружия: {int(winner_ball.weapon_length)} пикселей!")
             print(f"💥 Всего ударов в бою: {len(game_state.hit_events)}")
+            print(f"🎯 Эффективность оружия: {int(winner_ball.weapon_length / 200 * 100)}% роста!")
             
             # Сохраняем еще 5 секунд кадров с победным экраном
-            for victory_frame in range(FPS * 5):
+            for victory_frame in range(FPS * 2):
                 screen_surface = renderer.draw(game_state)
                 display_screen.blit(screen_surface, (0, 0))
                 pygame.display.flip()
@@ -127,9 +129,7 @@ def main():
     if os.path.exists(FRAMES_DIR):
         shutil.rmtree(FRAMES_DIR)
     
-    print(f"✅ ГОТОВО! Пиксельное эпическое видео сохранено: {FINAL_VIDEO_PATH}")
-    print("🎥 Готово для TikTok/YouTube Shorts!")
-    print("⚔️ С растущими пиксельными оружиями!")
-
+    print(f"✅ ГОТОВО! Улучшенное пиксельное эпическое видео: {FINAL_VIDEO_PATH}")
+    print("🎥 Готово для TikTok")
 if __name__ == "__main__":
     main()

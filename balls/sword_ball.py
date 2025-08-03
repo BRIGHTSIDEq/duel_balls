@@ -6,21 +6,21 @@ class SwordBall(FightingBall):
         super().__init__(x=x, y=y, radius=40, color=(200, 50, 200), 
                          name="Sword Master", weapon_type="sword")
         
-        self.stats = {'damage': 15, 'range': 100, 'speed': 5, 'radius': self.radius}
+        self.stats = {'damage': 4, 'range': 100, 'speed': 5, 'radius': self.radius}
         
-        # Параметры меча - хорошая стартовая длина
-        self.weapon_length = 55
-        self.weapon_width = 10
+        # Параметры меча - увеличенные в 2 раза
+        self.weapon_length = 80
+        self.weapon_width = 15
         
         # Улучшенная физика для мечника
-        self.bounce_energy = 1.2  # Больше отскоков
+        self.bounce_energy = 1.15
         self.weapon_rotation_speed = 5
 
     def on_successful_attack(self, target):
         # Меч становится сильнее с каждым ударом
         self.stats['damage'] += 2.5
-        self.weapon_length += 4  # Растет в длину
-        self.weapon_width = min(16, self.weapon_width + 0.4)  # И в ширину
+        self.weapon_length += 8  # Растет в длину быстрее
+        self.weapon_width = min(50, self.weapon_width + 0.8)  # И в ширину
         
         # Дополнительный импульс после удара
         self.vx += 2 if self.rect.centerx > target.rect.centerx else -2
