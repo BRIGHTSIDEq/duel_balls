@@ -10,8 +10,15 @@ class GameState:
         self.ball2 = ball2
         self.balls = [self.ball1, self.ball2]
         self.winner = None
+        
+        # УЛУЧШЕННОЕ парирование - более заметное
         self.parry_effect_timer = 0
+        self.parry_duration = 30  # 0.5 секунды эффекта вместо 1 кадра
+        self.time_freeze_timer = 0
+        self.time_freeze_duration = 15  # 0.25 секунды заморозки времени
+        
         self.hit_events = []
+        self.parry_events = []  # Отдельно отслеживаем парирования
         self.frame_count = 0
         
         # Система предотвращения застреваний
@@ -76,15 +83,30 @@ class GameState:
             self.ball2.vy += ny * push_force
 
     def enhanced_collision_detection(self):
-        """Улучшенная система столкновений"""
-        if self.parry_effect_timer > 0:
+        """Улучшенная система столкновений с поддержкой стрел"""
+        if self.time_freeze_timer > 0:
             return
             
         weapon1_rect = self.ball1.get_weapon_rect()
         weapon2_rect = self.ball2.get_weapon_rect()
         
-        # 1. ПАРИРОВАНИЕ - наивысший приоритет
+        # Проверяем парирование стрел лучника
+        parry_occurred = False
+        
+        # Если у лучника есть стрелы, проверяем их столкновение с оружием
+        if hasattr(self.ball1, 'check_arrow_weapon_collision'):
+            if self.ball1.check_arrow_weapon_collision(weapon2_rect):
+                parry_occurred = True
+        
+        if hasattr(self.ball2, 'check_arrow_weapon_collision'):
+            if self.ball2.check_arrow_weapon_collision(weapon1_rect):
+                parry_occurred = True
+        
+        # 1. ПАРИРОВАНИЕ ОРУЖИЯ - наивысший приоритет
         if weapon1_rect.colliderect(weapon2_rect):
+            parry_occurred = True
+        
+        if parry_occurred:
             self.trigger_parry()
             return
         
@@ -104,11 +126,16 @@ class GameState:
                 hit_occurred = True
 
     def trigger_parry(self):
-        """Запускает УЛУЧШЕННЫЙ эффект парирования - всего 1 кадр микро-стан"""
+        """Запускает УЛУЧШЕННЫЙ эффект парирования"""
         self.ball1.parry()
         self.ball2.parry()
-        self.parry_effect_timer = 1  # Только 1 кадр!
-        self.hit_events.append(self.frame_count)
+        
+        # Эффект парирования теперь длится дольше и заметнее
+        self.parry_effect_timer = self.parry_duration
+        self.time_freeze_timer = self.time_freeze_duration
+        
+        # Записываем событие парирования отдельно
+        self.parry_events.append(self.frame_count)
 
     def keep_balls_in_arena(self):
         """Гарантирует, что шарики остаются в арене"""
@@ -144,6 +171,16 @@ class GameState:
         self.frame_count += 1
         
         if self.winner:
+            return
+
+        # Если время заморожено - только обновляем эффекты, не физику
+        if self.time_freeze_timer > 0:
+            self.time_freeze_timer -= 1
+            
+            # Обновляем только таймеры эффектов
+            if self.parry_effect_timer > 0:
+                self.parry_effect_timer -= 1
+            
             return
 
         # Обновляем физику шаров с взаимодействием

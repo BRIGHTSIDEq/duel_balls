@@ -103,13 +103,13 @@ class FightingBall:
         dy = self.rect.centery - center_y
         distance = math.sqrt(dx*dx + dy*dy)
         if distance > 0:
-            bounce_force = 6  # Уменьшили силу отброса
+            bounce_force = 8  # Увеличили силу отброса для парирования
             self.vx += (dx / distance) * bounce_force
-            self.vy += (dy / distance) * bounce_force - 2
+            self.vy += (dy / distance) * bounce_force - 3
         
-        # Добавляем небольшую случайность
-        self.vx += random.uniform(-1, 1)
-        self.vy += random.uniform(-1, 1)
+        # Добавляем больше случайности для парирования
+        self.vx += random.uniform(-2, 2)
+        self.vy += random.uniform(-2, 2)
 
     def check_collision_with_other(self, other):
         """Проверка и разрешение столкновений между шариками"""
@@ -344,6 +344,7 @@ class FightingBall:
             self.draw_pixel_sword(screen, start_pos, end_pos)
         elif self.weapon_type == "spear":
             self.draw_pixel_spear(screen, start_pos, end_pos)
+        # Новые типы оружия будут добавлены в дочерних классах
 
     def draw(self, screen):
         # Цвет шарика с эффектом неуязвимости

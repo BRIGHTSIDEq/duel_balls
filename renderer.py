@@ -48,38 +48,109 @@ class Renderer:
             b = int(171 * (1 - color_ratio) + 180 * color_ratio)
             pygame.draw.line(self.screen, (r, g, b), (0, y), (WIDTH, y))
 
-    def draw_spark_parry_effect(self, game_state):
-        """НОВЫЙ эффект парирования - искры как при столкновении металла"""
+    def draw_enhanced_parry_effect(self, game_state):
+        """НОВЫЙ улучшенный эффект парирования - более заметный и эффектный"""
         if game_state.parry_effect_timer <= 0:
             return
             
-        # Центр между шариками для искр
+        # Центр между шариками для эффектов
         center_x = (game_state.ball1.rect.centerx + game_state.ball2.rect.centerx) // 2
         center_y = (game_state.ball1.rect.centery + game_state.ball2.rect.centery) // 2
         
-        # Создаем искры вокруг точки столкновения
-        for i in range(15):  # 15 искр
+        # Интенсивность эффекта (убывает со временем)
+        intensity = game_state.parry_effect_timer / game_state.parry_duration
+        
+        # 1. БОЛЬШОЙ ВЗРЫВ СВЕТА в центре
+        explosion_radius = int(80 * intensity)
+        explosion_surface = pygame.Surface((explosion_radius * 2, explosion_radius * 2), pygame.SRCALPHA)
+        explosion_color = (255, 255, 255, int(150 * intensity))
+        pygame.draw.circle(explosion_surface, explosion_color, 
+                         (explosion_radius, explosion_radius), explosion_radius)
+        self.screen.blit(explosion_surface, 
+                        (center_x - explosion_radius, center_y - explosion_radius))
+        
+        # 2. УДАРНАЯ ВОЛНА - расширяющиеся кольца
+        for i in range(3):
+            wave_radius = int((100 + i * 30) * (1 - intensity))
+            wave_thickness = max(1, int(8 * intensity))
+            wave_alpha = int(100 * intensity)
+            
+            wave_surface = pygame.Surface((wave_radius * 2, wave_radius * 2), pygame.SRCALPHA)
+            wave_color = (255, 200, 0, wave_alpha)
+            pygame.draw.circle(wave_surface, wave_color, 
+                             (wave_radius, wave_radius), wave_radius, wave_thickness)
+            self.screen.blit(wave_surface, 
+                           (center_x - wave_radius, center_y - wave_radius))
+        
+        # 3. МНОГО ИСКР - более эффектные
+        num_sparks = max(5, int(25 * intensity))
+        for i in range(num_sparks):
             # Случайное направление для каждой искры
             angle = random.uniform(0, 360)
-            distance = random.uniform(10, 40)
+            distance = random.uniform(20, 100 * intensity)
             
             spark_x = center_x + distance * math.cos(math.radians(angle))
             spark_y = center_y + distance * math.sin(math.radians(angle))
             
-            # Цвета искр - желтый, оранжевый, белый
-            colors = [(255, 255, 100), (255, 200, 50), (255, 255, 255), (255, 150, 0)]
+            # Яркие цвета искр
+            colors = [(255, 255, 150), (255, 200, 50), (255, 255, 255), (255, 150, 0), (255, 100, 100)]
             spark_color = random.choice(colors)
             
-            # Размер искры
-            spark_size = random.randint(2, 5)
+            # Размер искры зависит от интенсивности
+            spark_size = random.randint(3, 10)
             
-            # Рисуем искру
+            # Рисуем искру как звездочку
             pygame.draw.circle(self.screen, spark_color, (int(spark_x), int(spark_y)), spark_size)
             
-            # Добавляем "хвостик" искры
-            tail_x = spark_x - 8 * math.cos(math.radians(angle))
-            tail_y = spark_y - 8 * math.sin(math.radians(angle))
-            pygame.draw.line(self.screen, spark_color, (spark_x, spark_y), (tail_x, tail_y), 2)
+            # Добавляем крестообразные лучи к искре
+            ray_length = spark_size * 2
+            for ray_angle in [0, 45, 90, 135]:
+                ray_end_x = spark_x + ray_length * math.cos(math.radians(angle + ray_angle))
+                ray_end_y = spark_y + ray_length * math.sin(math.radians(angle + ray_angle))
+                pygame.draw.line(self.screen, spark_color, 
+                               (spark_x, spark_y), (ray_end_x, ray_end_y), 2)
+        
+        # 4. ЭКРАННЫЙ ЭФФЕКТ - легкое мерцание экрана
+        if intensity > 0.7:
+            screen_flash = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+            flash_alpha = int(30 * (intensity - 0.7) / 0.3)
+            screen_flash.fill((255, 255, 255, flash_alpha))
+            self.screen.blit(screen_flash, (0, 0))
+        
+        # 5. ТЕКСТ "PARRY!" если эффект только начался
+        if game_state.parry_effect_timer > game_state.parry_duration * 0.8:
+            parry_text = ""
+            text_size = int(60 * intensity)
+            try:
+                parry_font = pygame.font.Font(FONT_PATH, text_size)
+            except:
+                parry_font = pygame.font.Font(None, text_size)
+            
+            self.draw_text_with_shadow(parry_text, parry_font, (255, 255, 0), 
+                                     center_x, center_y - 80, True, 3)
+
+    def draw_freeze_time_effect(self, game_state):
+        """Эффект замедления времени во время парирования"""
+        if game_state.time_freeze_timer <= 0:
+            return
+        
+        # Легкий синий оттенок на весь экран
+        freeze_intensity = game_state.time_freeze_timer / game_state.time_freeze_duration
+        freeze_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        freeze_alpha = int(40 * freeze_intensity)
+        freeze_surface.fill((100, 150, 255, freeze_alpha))
+        self.screen.blit(freeze_surface, (0, 0))
+        
+        # Частицы "заморозки" по краям экрана
+        for i in range(int(20 * freeze_intensity)):
+            x = random.randint(0, WIDTH)
+            y = random.randint(0, HEIGHT)
+            size = random.randint(2, 5)
+            alpha = int(150 * freeze_intensity)
+            
+            particle_surface = pygame.Surface((size * 2, size * 2), pygame.SRCALPHA)
+            pygame.draw.circle(particle_surface, (200, 220, 255, alpha), (size, size), size)
+            self.screen.blit(particle_surface, (x - size, y - size))
 
     def draw_health_bar(self, ball, x, y, width, height, is_top=True):
         """Рисует стильную полоску здоровья с приятными цветами"""
@@ -186,21 +257,41 @@ class Renderer:
         self.draw_text_with_shadow(damage_text2, self.font_tiny, (100, 200, 255), 
                                    WIDTH - 120, STATS_Y, True, 1)
         
-        # Длина оружия
-        length_text1 = f"LENGTH: {int(ball1.weapon_length)}"
-        length_text2 = f"LENGTH: {int(ball2.weapon_length)}"
+        # Длина оружия или особые характеристики
+        if hasattr(ball1, 'weapon_length'):
+            length_text1 = f"LENGTH: {int(ball1.weapon_length)}"
+        elif hasattr(ball1, 'arrows_per_shot'):
+            length_text1 = f"ARROWS: {ball1.arrows_per_shot}"
+        else:
+            length_text1 = f"POWER: {int(ball1.stats.get('range', 100))}"
+            
+        if hasattr(ball2, 'weapon_length'):
+            length_text2 = f"LENGTH: {int(ball2.weapon_length)}"
+        elif hasattr(ball2, 'arrows_per_shot'):
+            length_text2 = f"ARROWS: {ball2.arrows_per_shot}"
+        else:
+            length_text2 = f"POWER: {int(ball2.stats.get('range', 100))}"
         
         self.draw_text_with_shadow(length_text1, self.font_tiny, (200, 150, 200), 
                                    120, STATS_Y + 35, True, 1)
         self.draw_text_with_shadow(length_text2, self.font_tiny, (150, 200, 200), 
                                    WIDTH - 120, STATS_Y + 35, True, 1)
 
+    def get_dynamic_title(self, ball1, ball2):
+        """Генерирует динамический заголовок на основе типов бойцов"""
+        type1 = ball1.weapon_type.upper()
+        type2 = ball2.weapon_type.upper()
+        return f"{type1}  VS  {type2}"
+
     def draw(self, game_state):
         # Градиентный фон
         self.draw_gradient_background()
 
-        # Заголовок
-        title_text = "SWORD  VS  SPEAR"
+        # Эффект заморозки времени (рисуем первым, чтобы был под всем)
+        self.draw_freeze_time_effect(game_state)
+
+        # Динамический заголовок
+        title_text = self.get_dynamic_title(game_state.ball1, game_state.ball2)
         self.draw_text_with_shadow(title_text, self.font_medium, BLACK, 
                                    WIDTH // 2, TITLE_Y, True, 2)
 
@@ -214,8 +305,8 @@ class Renderer:
         for ball in game_state.balls:
             ball.draw(self.screen)
 
-        # НОВЫЙ эффект парирования - искры
-        self.draw_spark_parry_effect(game_state)
+        # НОВЫЙ улучшенный эффект парирования (рисуем поверх всего)
+        self.draw_enhanced_parry_effect(game_state)
 
         # Полоски здоровья
         health_bar_width = WIDTH - 100

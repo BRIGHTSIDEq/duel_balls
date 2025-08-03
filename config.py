@@ -1,6 +1,6 @@
 # config.py
 
-# Настройки экрана и видео (вертikальный формат для Shorts/TikTok)
+# Настройки экрана и видео (вертикальный формат для Shorts/TikTok)
 WIDTH = 720
 HEIGHT = 1280
 FPS = 60
@@ -39,6 +39,13 @@ OUTPUT_DIR = "output"
 FRAMES_DIR = f"{OUTPUT_DIR}/frames"
 FINAL_VIDEO_PATH = f"{OUTPUT_DIR}/final_video.mp4"
 INTRO_AUDIO_PATH = f"{OUTPUT_DIR}/intro.mp3"
-HIT_SOUND_PATH = "assets/sounds/ball_s.mp3"
-PARRY_SOUND_PATH = "assets/sounds/parry.mp3"
-WIN_SOUND_PATH = "assets/sounds/victory_sound.mp3"
+
+# НОВЫЕ звуковые файлы для разных действий
+HIT_SOUND_PATH = "assets/sounds/hit.mp3"          # Звук удара
+PARRY_SOUND_PATH = "assets/sounds/parry.mp3"      # Звук парирования
+DASH_SOUND_PATH = "assets/sounds/dash.mp3"        # Звук рывка топора
+ARROW_SOUND_PATH = "assets/sounds/arrow.mp3"      # Звук выстрела стрелы
+WIN_SOUND_PATH = "assets/sounds/victory.mp3"      # Звук победы
+
+# Для обратной совместимости (старый путь)
+# HIT_SOUND_PATH остается как основной звук для ударов
