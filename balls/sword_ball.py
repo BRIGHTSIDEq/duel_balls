@@ -6,7 +6,7 @@ class SwordBall(FightingBall):
         super().__init__(x=x, y=y, radius=40, color=(200, 50, 200), 
                          name="Sword Master", weapon_type="sword")
         
-        self.stats = {'damage': 4, 'range': 100, 'speed': 5, 'radius': self.radius}
+        self.stats = {'damage': 4, 'range': 100, 'speed': 4, 'radius': self.radius}
         
         # Параметры меча - увеличенные в 2 раза
         self.weapon_length = 80

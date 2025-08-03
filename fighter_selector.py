@@ -22,29 +22,29 @@ class FighterSelector:
             1: {
                 'name': 'Sword Master',
                 'color': (200, 50, 200),
-                'description': 'Мощные удары мечом',
-                'special': 'Растет в силе с каждым ударом',
+                'description': 'strong hits',
+                'special': 'Grow power and good basic stats',
                 'class': 'SwordBall'
             },
             2: {
                 'name': 'Spear Hunter', 
                 'color': (50, 200, 200),
-                'description': 'Длинное копье, быстрые атаки',
-                'special': 'Копье растет быстрее всех',
+                'description': 'long hits',
+                'special': 'Spear has the longest range',
                 'class': 'SpearBall'
             },
             3: {
                 'name': 'Axe Berserker',
                 'color': (150, 75, 0),
-                'description': 'Двуручный топор, мощный рывок',
-                'special': 'Неуязвим во время рывка раз в 5 сек',
+                'description': 'Axe with dash',
+                'special': 'Invicible when dashing',
                 'class': 'AxeBall'
             },
             4: {
                 'name': 'Archer Lord',
                 'color': (34, 139, 34),
-                'description': 'Стрелы издалека, растущий залп',
-                'special': 'Количество стрел +1 после каждого выстрела',
+                'description': 'range hits',
+                'special': 'Each hit gives +1 arrow',
                 'class': 'BowBall'
             }
         }

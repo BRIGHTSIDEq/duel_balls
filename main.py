@@ -3,7 +3,7 @@ import os
 import shutil
 import pygame
 import time
-
+import math
 from config import *
 from simulation import GameState
 from renderer import Renderer

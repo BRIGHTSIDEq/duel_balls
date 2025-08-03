@@ -25,7 +25,7 @@ class Arrow:
         self.angle = math.degrees(math.atan2(dy, dx))
         self.length = 25
         self.active = True
-        self.damage = 2
+        self.damage = 5
         
         # Для отслеживания столкновений
         self.hit_targets = set()
@@ -90,7 +90,7 @@ class BowBall(FightingBall):
         super().__init__(x=x, y=y, radius=35, color=(34, 139, 34), 
                          name="Archer Lord", weapon_type="bow")
         
-        self.stats = {'damage': 5, 'range': 200, 'speed': 6, 'radius': self.radius}
+        self.stats = {'damage': 5, 'range': 200, 'speed': 7, 'radius': self.radius}
         
         # Параметры лука
         self.weapon_length = 60
@@ -99,7 +99,7 @@ class BowBall(FightingBall):
         # ОСОБЕННОСТЬ: Стрелы
         self.arrows = []
         self.shoot_cooldown = 0
-        self.shoot_cooldown_max = 60  # 1 секунда при 60 FPS
+        self.shoot_cooldown_max = 50# 1 секунда при 60 FPS
         self.arrows_per_shot = 1  # Начинаем с одной стрелы
         self.total_shots = 0
         
@@ -109,7 +109,7 @@ class BowBall(FightingBall):
         self.bounce_energy = 1.3
         
         # Уменьшенное здоровье
-        self.max_health = 80
+        self.max_health = 100
         self.health = self.max_health
 
     def can_shoot(self):

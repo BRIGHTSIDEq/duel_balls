@@ -11,11 +11,15 @@ class GameState:
         self.balls = [self.ball1, self.ball2]
         self.winner = None
         
-        # УЛУЧШЕННОЕ парирование - более заметное
-        self.parry_effect_timer = 0
-        self.parry_duration = 30  # 0.5 секунды эффекта вместо 1 кадра
+        # НОВАЯ ЛОГИКА: остановка времени при УДАРЕ, а не парировании
+        self.hit_effect_timer = 0
+        self.hit_duration = 30  # 0.5 секунды эффекта удара
         self.time_freeze_timer = 0
-        self.time_freeze_duration = 15  # 0.25 секунды заморозки времени
+        self.time_freeze_duration = 15  # 0.25 секунды заморозки времени при ударе
+        
+        # Парирование теперь только звуковой и визуальный эффект
+        self.parry_effect_timer = 0
+        self.parry_duration = 20  # 0.33 секунды только визуального эффекта
         
         self.hit_events = []
         self.parry_events = []  # Отдельно отслеживаем парирования
@@ -83,7 +87,7 @@ class GameState:
             self.ball2.vy += ny * push_force
 
     def enhanced_collision_detection(self):
-        """Улучшенная система столкновений с поддержкой стрел"""
+        """Улучшенная система столкновений с новой логикой эффектов"""
         if self.time_freeze_timer > 0:
             return
             
@@ -102,7 +106,7 @@ class GameState:
             if self.ball2.check_arrow_weapon_collision(weapon1_rect):
                 parry_occurred = True
         
-        # 1. ПАРИРОВАНИЕ ОРУЖИЯ - наивысший приоритет
+        # 1. ПАРИРОВАНИЕ ОРУЖИЯ - теперь БЕЗ остановки времени
         if weapon1_rect.colliderect(weapon2_rect):
             parry_occurred = True
         
@@ -110,32 +114,40 @@ class GameState:
             self.trigger_parry()
             return
         
-        # 2. УДАРЫ - только если можем атаковать
+        # 2. УДАРЫ - теперь С остановкой времени
         hit_occurred = False
         
         # Проверяем удар первого шарика
         if weapon1_rect.colliderect(self.ball2.rect) and self.ball1.can_attack():
             if self.ball1.attack(self.ball2):
-                self.hit_events.append(self.frame_count)
+                self.trigger_hit()
                 hit_occurred = True
         
         # Проверяем удар второго шарика
         if weapon2_rect.colliderect(self.ball1.rect) and self.ball2.can_attack():
             if self.ball2.attack(self.ball1):
-                self.hit_events.append(self.frame_count)
+                self.trigger_hit()
                 hit_occurred = True
 
     def trigger_parry(self):
-        """Запускает УЛУЧШЕННЫЙ эффект парирования"""
+        """Запускает эффект парирования БЕЗ остановки времени"""
         self.ball1.parry()
         self.ball2.parry()
         
-        # Эффект парирования теперь длится дольше и заметнее
+        # Только визуальный эффект, без заморозки времени
         self.parry_effect_timer = self.parry_duration
-        self.time_freeze_timer = self.time_freeze_duration
         
         # Записываем событие парирования отдельно
         self.parry_events.append(self.frame_count)
+
+    def trigger_hit(self):
+        """Запускает эффект удара С остановкой времени"""
+        # Эффект удара теперь включает заморозку времени
+        self.hit_effect_timer = self.hit_duration
+        self.time_freeze_timer = self.time_freeze_duration
+        
+        # Записываем событие удара
+        self.hit_events.append(self.frame_count)
 
     def keep_balls_in_arena(self):
         """Гарантирует, что шарики остаются в арене"""
@@ -173,11 +185,13 @@ class GameState:
         if self.winner:
             return
 
-        # Если время заморожено - только обновляем эффекты, не физику
+        # Если время заморожено (при ударе) - только обновляем эффекты, не физику
         if self.time_freeze_timer > 0:
             self.time_freeze_timer -= 1
             
             # Обновляем только таймеры эффектов
+            if self.hit_effect_timer > 0:
+                self.hit_effect_timer -= 1
             if self.parry_effect_timer > 0:
                 self.parry_effect_timer -= 1
             
@@ -202,7 +216,9 @@ class GameState:
         # Добавляем случайную энергию при необходимости
         self.add_random_energy()
 
-        # Уменьшаем таймер эффекта парирования
+        # Уменьшаем таймеры эффектов
+        if self.hit_effect_timer > 0:
+            self.hit_effect_timer -= 1
         if self.parry_effect_timer > 0:
             self.parry_effect_timer -= 1
             

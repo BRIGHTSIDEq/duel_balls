@@ -8,7 +8,7 @@ class AxeBall(FightingBall):
         super().__init__(x=x, y=y, radius=45, color=(150, 75, 0), 
                          name="Axe Berserker", weapon_type="axe")
         
-        self.stats = {'damage': 8, 'range': 90, 'speed': 4, 'radius': self.radius}
+        self.stats = {'damage': 8, 'range': 90, 'speed': 2, 'radius': self.radius}
         
         # Параметры топора
         self.weapon_length = 70
@@ -24,7 +24,7 @@ class AxeBall(FightingBall):
         self.dash_trail = []  # Для эффекта следа
         
         # Улучшенная физика для берсерка
-        self.max_speed = 18
+        self.max_speed = 14
         self.weapon_rotation_speed = 7
         self.base_rotation_speed = 12  # Быстрее вращается
 
@@ -98,12 +98,12 @@ class AxeBall(FightingBall):
 
     def on_successful_attack(self, target):
         # Топор наносит больше урона и становится больше
-        self.stats['damage'] += 3.0
+        self.stats['damage'] += 1.0
         self.weapon_length += 6
         self.weapon_width = min(60, self.weapon_width + 1.2)
         
         # Восстанавливает немного здоровья после удара (берсерк)
-        self.health = min(self.max_health, self.health + 5)
+        self.health = min(self.max_health, self.health + 1)
 
     def draw_pixel_axe(self, screen, start_pos, end_pos):
         """Рисует красивый пиксельный двуручный топор с контрастными цветами"""
