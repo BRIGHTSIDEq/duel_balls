@@ -16,8 +16,8 @@ class FightingBall:
         # УЛУЧШЕННАЯ ФИЗИКА для TikTok/YouTube Shorts
         self.vx = random.uniform(-8, 8)
         self.vy = random.uniform(-6, 6)
-        self.gravity = 0.4
-        self.bounce_energy = 1.02  # Уменьшили энергию отскока
+        self.gravity = 0.2
+        self.bounce_energy = 1.01  # Уменьшили энергию отскока
         self.friction = 0.998  # Больше трения для более спокойного движения
         self.min_speed = 2
         self.max_speed = 7  # Уменьшили максимальную скорость
